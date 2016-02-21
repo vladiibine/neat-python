@@ -48,6 +48,10 @@ class ReporterSet(object):
         for r in self.reporters:
             r.species_stagnant(species)
 
+    def elite_species(self, species):
+        for r in self.reporters:
+            r.elite_species(species)
+
     def info(self, msg):
         for r in self.reporters:
             r.info(msg)
@@ -77,6 +81,9 @@ class BaseReporter(object):
         pass
 
     def species_stagnant(self, species):
+        pass
+
+    def elite_species(self, species):
         pass
 
     def info(self, msg):
@@ -124,6 +131,12 @@ class StdOutReporter(BaseReporter):
 
     def species_stagnant(self, species):
         print("\nSpecies {0} with {1} members is stagnated: removing it".format(species.ID, len(species.members)))
+
+    def elite_species(self, species):
+        print(
+            "\nAlthough species {0} stagnated, it's an elite, so it was allowed to continue evolving."
+            .format(species.ID)
+        )
 
     def info(self, msg):
         print(msg)

@@ -28,10 +28,12 @@ class DefaultReproduction(object):
         remaining_species = {}
         species_fitness = []
         avg_adjusted_fitness = 0.0
-        for s, stagnant in self.stagnation.update(species):
+        for s, stagnant, elite in self.stagnation.update(species):
             if stagnant:
                 self.reporters.species_stagnant(s)
             else:
+                if elite:
+                    self.reporters.elite_species(s)
                 remaining_species[s.ID] = s
 
                 # Compute adjusted fitness.

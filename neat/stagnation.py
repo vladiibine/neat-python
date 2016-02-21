@@ -28,6 +28,7 @@ class DefaultStagnation(object):
 
         self.max_stagnation = int(params.get('max_stagnation'))
         self.species_fitness = params.get('species_fitness_func')
+        self.species_elitism = int(params.get('species_elitism'))
 
         if self.species_fitness == 'max':
             self.species_fitness_func = species_max_fitness
@@ -54,6 +55,10 @@ class DefaultStagnation(object):
 
     def update(self, species):
         result = []
+        every_fitness = set()
+        species_fitness_stagnant = {}  # {species: [fitness, is_stagnant]}
+
+        # Calculate the fitness value, and whether the species stagnated
         for s in species:
             fitness = self.species_fitness_func(s)
             scount = self.stagnant_counts.get(s.ID, 0)
@@ -63,14 +68,35 @@ class DefaultStagnation(object):
             else:
                 scount += 1
 
+            every_fitness.add(fitness)
+
             self.previous_fitnesses[s.ID] = fitness
             self.stagnant_counts[s.ID] = scount
 
             is_stagnant = scount >= self.max_stagnation
-            result.append((s, is_stagnant))
+            species_fitness_stagnant[species] = [fitness, is_stagnant]
+
+        # Save the elite species from removal (set their is_stagnant to False)
+        elite_fitness_values = \
+            set(sorted(every_fitness, reverse=True)[:self.species_elitism])
+        elites_saved = 0
+        for s, fitness_stagnant in species_fitness_stagnant.items():
+            fitness, is_stagnant = fitness_stagnant
+
+            if (is_stagnant and fitness in elite_fitness_values and
+                        elites_saved < self.species_elitism):
+                    elites_saved += 1
+                    fitness_stagnant[1] = False
+
+        # Remove the remaining stagnant species, and construct the result
+        for s, fitness_stagnant in species_fitness_stagnant.items():
+            fitness, is_stagnant = fitness_stagnant
 
             if is_stagnant:
                 self.remove(s)
+
+            is_elite = fitness in elite_fitness_values
+            result.append((s, is_stagnant, is_elite))
 
         self.reporters.info('Species no improv: {0!r}'.format(self.stagnant_counts))
 
